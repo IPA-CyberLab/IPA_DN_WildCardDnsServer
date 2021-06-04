@@ -1,3 +1,7 @@
+// Forked From: https://github.com/cunnie/sslip.io/
+// (Golang-based DNS server which maps DNS records with embedded IP addresses to those addresses)
+// by Brian Cunnie (https://github.com/cunnie/)
+
 // Package xip provides functions to create a DNS server which, when queried
 // with a hostname with an embedded IP address, returns that IP Address.  It
 // was inspired by xip.io, which was created by Sam Stephenson
