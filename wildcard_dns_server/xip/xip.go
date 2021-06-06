@@ -17,6 +17,37 @@ import (
 	"golang.org/x/net/dns/dnsmessage"
 )
 
+type Config struct {
+	DomainFqdn string
+
+	SoaMailAddress string
+
+	NsServerList map[string]string
+}
+
+var cfg Config
+
+func SetConfig(newConfig Config) {
+	cfg = newConfig
+
+	mbox, _ = dnsmessage.NewName(cfg.SoaMailAddress)
+
+
+	Customizations = DomainCustomizations{}
+
+
+	NameServers = []dnsmessage.NSResource{}
+	for nsName, nsIp := range cfg.NsServerList {
+		var nsr dnsmessage.NSResource
+		nsr.NS, _ = dnsmessage.NewName(nsName)
+		NameServers = append(NameServers, nsr)
+
+		ip := net.ParseIP(nsIp).To4()
+		Customizations[nsName] = DomainCustomization{A: []dnsmessage.AResource{{A: [4]byte{ip[0], ip[1], ip[2], ip[3]}}}}
+	}
+
+}
+
 // DomainCustomizations are values that are returned for specific queries.
 // The map key is the the domain in question, e.g. "sslip.io." (always include trailing dot).
 // For example, when querying for MX records for "sslip.io", return the protonmail servers,
@@ -87,9 +118,9 @@ var (
 			},
 		},
 		// nameserver addresses; we get queries for those every once in a while
-		"ns-aws.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}}},
-		"ns-azure.nono.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
-		"ns-gce.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
+		// "ns-aws.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{52, 0, 56, 137}}}},
+		// "ns-azure.nono.io.": {A: []dnsmessage.AResource{{A: [4]byte{52, 187, 42, 158}}}},
+		// "ns-gce.nono.io.":   {A: []dnsmessage.AResource{{A: [4]byte{104, 155, 144, 4}}}},
 		// CNAMEs for sslip.io for DKIM signing
 		"protonmail._domainkey.sslip.io.": {
 			CNAME: dnsmessage.CNAMEResource{

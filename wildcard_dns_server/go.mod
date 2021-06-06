@@ -1,6 +1,6 @@
 module xip
 
-go 1.15
+go 1.11
 
 require (
 	github.com/onsi/ginkgo v1.14.2

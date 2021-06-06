@@ -18,6 +18,8 @@ import (
 )
 
 func main() {
+	xip.SetConfig(init_config())
+
 	var wg sync.WaitGroup
 	conn, err := net.ListenUDP("udp", &net.UDPAddr{Port: 53})
 	//  common err hierarchy: net.OpError → os.SyscallError → syscall.Errno
