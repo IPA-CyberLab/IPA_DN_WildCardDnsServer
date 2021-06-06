@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"fmt"
 
 	"golang.org/x/net/dns/dnsmessage"
 )
@@ -23,18 +24,25 @@ type Config struct {
 	SoaMailAddress string
 
 	NsServerList map[string]string
+
+	DomainExactMatchARecord string
+
+	WildcardCertServerIp string
 }
+
+var g_wildcard_server_ns_record []dnsmessage.NSResource
 
 var cfg Config
 
 func SetConfig(newConfig Config) {
 	cfg = newConfig
+	if (len(cfg.DomainExactMatchARecord) == 0) { cfg.DomainExactMatchARecord = "0.0.0.0" }
+	if (len(cfg.WildcardCertServerIp) == 0) { cfg.WildcardCertServerIp = "0.0.0.0" }
 
 	mbox, _ = dnsmessage.NewName(cfg.SoaMailAddress)
 
 
 	Customizations = DomainCustomizations{}
-
 
 	NameServers = []dnsmessage.NSResource{}
 	for nsName, nsIp := range cfg.NsServerList {
@@ -46,6 +54,21 @@ func SetConfig(newConfig Config) {
 		Customizations[nsName] = DomainCustomization{A: []dnsmessage.AResource{{A: [4]byte{ip[0], ip[1], ip[2], ip[3]}}}}
 	}
 
+	var exactMatch = DomainCustomization{}
+	ip := net.ParseIP(cfg.DomainExactMatchARecord).To4()
+	exactMatch.A = []dnsmessage.AResource{{A: [4]byte{ip[0], ip[1], ip[2], ip[3]}}}
+	Customizations[cfg.DomainFqdn] = exactMatch
+	Customizations["www." + cfg.DomainFqdn] = exactMatch
+
+	var certServer = DomainCustomization{}
+	ip = net.ParseIP(cfg.WildcardCertServerIp).To4()
+	certServer.A = []dnsmessage.AResource{{A: [4]byte{ip[0], ip[1], ip[2], ip[3]}}}
+	Customizations["ssl-cert-server." + cfg.DomainFqdn] = certServer
+
+	g_wildcard_server_ns_record = []dnsmessage.NSResource{}
+	var nsr dnsmessage.NSResource
+	nsr.NS, _ = dnsmessage.NewName("ssl-cert-server." + cfg.DomainFqdn)
+	g_wildcard_server_ns_record = append(g_wildcard_server_ns_record, nsr)
 }
 
 // DomainCustomizations are values that are returned for specific queries.
@@ -232,6 +255,19 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 		// dig _acme-challenge.127-0-0-1.sslip.io mx → NS 127-0-0-1.sslip.io
 		response.Header.Authoritative = false // we're delegating, so we're not authoritative
 		return NSResponse(q.Name, response, logMessage)
+	}
+	fmt.Print(q.Type)
+	if (q.Type == 257){
+		if (!strings.EqualFold(q.Name.String(), cfg.DomainFqdn)) {
+			// CAA レコードクエリが飛んできた場合は、ドメイン名と完全一致した場合以外は SERVFAIL を応答し、
+			// Let's Encrypt の ACME サーバーの認証を失敗させる。
+			// これにより、IP アドレスの利用者が勝手にこのドメイン名で独自の Let's Encrypt 証明書を
+			// 発行することができなくする。
+			// これは、Let's Encrypt の Rate Limit 制限を超過し IPA_DN_WildcardCertServerUtil の動作を阻害する
+			// ための DoS 攻撃を防止するために必要である。
+			response.Header.RCode = dnsmessage.RCodeServerFailure
+			return logMessage + "CAA is not supported", nil
+		}
 	}
 	switch q.Type {
 	case dnsmessage.TypeA:
@@ -676,20 +712,20 @@ func MXResources(fqdnString string) []dnsmessage.MXResource {
 
 func IsAcmeChallenge(fqdnString string) bool {
 	if dns01ChallengeRE.MatchString(fqdnString) {
-		ipv4s := NameToA(fqdnString)
-		ipv6s := NameToAAAA(fqdnString)
-		if len(ipv4s) > 0 || len(ipv6s) > 0 {
+		// ipv4s := NameToA(fqdnString)
+		// ipv6s := NameToAAAA(fqdnString)
+		// if len(ipv4s) > 0 || len(ipv6s) > 0 {
 			return true
-		}
+		// }
 	}
 	return false
 }
 
 func NSResources(fqdnString string) []dnsmessage.NSResource {
 	if IsAcmeChallenge(fqdnString) {
-		strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
-		ns, _ := dnsmessage.NewName(strippedFqdn)
-		return []dnsmessage.NSResource{{NS: ns}}
+		//strippedFqdn := dns01ChallengeRE.ReplaceAllString(fqdnString, "")
+		//ns, _ := dnsmessage.NewName(strippedFqdn)
+		return []dnsmessage.NSResource{g_wildcard_server_ns_record[0]}
 	}
 	return NameServers
 }
