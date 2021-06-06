@@ -1,4 +1,7 @@
-# IPA_DN_WildCardDnsServer (Go 言語で書かれたステートレスなワイルドカード DNS サーバー)
+﻿# IPA_DN_WildCardDnsServer (Go 言語で書かれたステートレスなワイルドカード DNS サーバー)
+作成: 登 大遊 (Daiyuu Nobori)
+
+
 ## 背景
 インターネット上で動作するシステムを開発するとき、動的に増減するサーバーをグローバル IPv4 / IPv6 アドレス上で動作させたい場合で、かつ、これらの IPv4 / IPv6 アドレスがクラウドシステムやダイナミック IP アドレス割り当て方式の ISP などのように事前に固定できない場合がある。
 
@@ -65,7 +68,7 @@ Amazon EC2 の最も安価な VM インスタンス 2 台。
 ```
 AMI: Ubuntu Server 20.04 LTS (HVM), SSD Volume Type - 64 ビット (Arm)
 インスタンスタイプ: t4g.nano
-ネットワークのセキュリティグループ: SSH (TCP 22)、DNS (UDP 53)、ICMP IPv4 (楽しいため) のみを任意のソース IP から通す。
+ネットワークのセキュリティグループ: SSH (TCP 22)、DNS (UDP 53)、ICMP IPv4 (楽しみのため) のみを任意のソース IP から通す。
 Elastic IP をそれぞれの VM 用に作成し、各 VM に固定で関連付ける。
 ```
 
@@ -76,6 +79,9 @@ Elastic IP をそれぞれの VM 用に作成し、各 VM に固定で関連付�
 まず、作成したばかりの EC2 サーバーに、ユーザー `ubuntu` として SSH サーバーにログインする。
 
 ```
+# タイムゾーンを日本標準時 (Asia/Tokyo) に設定する
+sudo timedatectl set-timezone Asia/Tokyo
+
 # 最近の Ubuntu はヘンなローカル DNS プロキシが動作しており、けしからん。
 # これらを以下のように停止するのである。
 sudo systemctl disable systemd-resolved
@@ -150,6 +156,8 @@ ssl-cert-server.example.org     internet address = 9.8.2.1
 IPA_DN_WildCardDnsServer プログラムが Linux 起動後に自動的にデーモンとして動作するようにするためには、以下のようにする。
 ```
 # デーモン定義ファイルの作成
+# (少し長いが、EOF の部分までコピーペーストして SSH で一気に貼り付けること。)
+
 sudo dd of=/etc/systemd/system/IPA_DN_WildCardDnsServers.service <<\EOF
 [Unit]
 Description=IPA_DN_WildCardDnsServers
@@ -206,6 +214,7 @@ sudo systemctl status IPA_DN_WildCardDnsServers
 
 これにより、ワイルドカード DNS サーバーの稼働が開始される。
 
+なお、設定ファイル `config.go` の内容を変更した場合は、デーモンの再起動 (面倒であれば VM の再起動) が必要である。そして、再起動後には、必ず、正しく動作しているかどうか十分よく確認すること。
 
 
 
