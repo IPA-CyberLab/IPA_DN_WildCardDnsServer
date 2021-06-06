@@ -15,7 +15,7 @@ func init_config() xip.Config {
     // ドメイン名はすべての文字を小文字で記載する。
     // 文字列の最後は "." で終わる必要がある。
     cfg.DomainFqdn = "example.org."
-    
+
     // SOA レコードに含まれるメールアドレス (DNS FQDN 形式の表記)。実質的に世界中で全く利用されていないので適当でよい。最後は "." で終わること。
     cfg.SoaMailAddress = "none.example.org."
 
