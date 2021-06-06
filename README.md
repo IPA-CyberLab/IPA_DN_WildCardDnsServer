@@ -195,8 +195,6 @@ sudo systemctl enable IPA_DN_WildCardDnsServers
 # 動作開始
 sudo systemctl start IPA_DN_WildCardDnsServers
 
-sudo systemctl stop IPA_DN_WildCardDnsServers
-
 # 正しく動作しているかどうか確認
 sudo systemctl status IPA_DN_WildCardDnsServers
 
