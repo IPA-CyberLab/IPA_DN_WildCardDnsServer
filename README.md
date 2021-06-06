@@ -143,8 +143,6 @@ _acme-challenge.example.org     nameserver = ssl-cert-server.example.org
 ssl-cert-server.example.org     internet address = 9.8.2.1
 ```
 
-よっしゃ
-
 問題なければ、テスト実行している go を Ctrl + C で終了する。
 
 
@@ -189,11 +187,24 @@ sudo systemctl stop IPA_DN_WildCardDnsServers
 
 # 正しく動作しているかどうか確認
 sudo systemctl status IPA_DN_WildCardDnsServers
+
+# 
 ```
 
 
+デーモン化が完了したら、reboot して自動的に DNS サーバーが動作開始することを確認する。
+
+また、上記の `nslookup` コマンドによる外部クライアント端末からの実際の DNS クエリテストも実行し、正しく動作することを確認する。
 
 
+## 上位 DNS サーバー (レジストリ等の DNS サーバー) への NS 委譲レコードの登録申請
+上記のように DNS サーバー (少なくとも 2 台) の稼働を開始させた後に、上流の DNS サーバーへの NS レコードの登録を申請する。
+
+ここで、NS レコードの名前と IP アドレスは `config.go` で指定したものと一致させる必要があるため、注意すること。
+
+上位 DNS サーバーへの登録が行なわれると、無事、インターネットから名前解決ができるようになる。
+
+これにより、ワイルドカード DNS サーバーの稼働が開始される。
 
 
 
