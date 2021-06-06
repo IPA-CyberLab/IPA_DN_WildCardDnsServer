@@ -114,6 +114,8 @@ nano /opt/IPA_DN_WildCardDnsServer/IPA_DN_WildCardDnsServer/wildcard_dns_server/
 # 本 DNS サーバープログラムをテスト実行をしてみる。
 cd /opt/IPA_DN_WildCardDnsServer/IPA_DN_WildCardDnsServer/wildcard_dns_server/
 sudo go run main.go config.go
+
+# 糸冬了！！
 ```
 
 ## DNS サーバーが正しく動作していることのテスト
@@ -148,6 +150,7 @@ ns2.example.org internet address = 5.6.7.8
 > _acme-challenge.example.org.
 _acme-challenge.example.org     nameserver = ssl-cert-server.example.org
 ssl-cert-server.example.org     internet address = 9.8.2.1
+
 ```
 
 問題なければ、テスト実行している go を Ctrl + C で終了する。
@@ -197,7 +200,7 @@ sudo systemctl stop IPA_DN_WildCardDnsServers
 # 正しく動作しているかどうか確認
 sudo systemctl status IPA_DN_WildCardDnsServers
 
-# 
+# 糸冬了！！
 ```
 
 
