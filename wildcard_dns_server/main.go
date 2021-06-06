@@ -7,6 +7,7 @@
 // Author: Daiyuu Nobori
 // 
 // インチキ Wildcard DNS サーバー！！
+// 多くの部分は、sslip.io のプログラム (Apache 2.0 ライセンス) の派生である。
 // 
 // Forked From: https://github.com/cunnie/sslip.io/
 // (Golang-based DNS server which maps DNS records with embedded IP addresses to those addresses)
