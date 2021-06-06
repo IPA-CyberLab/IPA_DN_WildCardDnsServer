@@ -125,7 +125,7 @@ var (
 	dkim2, _       = dnsmessage.NewName("protonmail2.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
 	dkim3, _       = dnsmessage.NewName("protonmail3.domainkey.dw4gykv5i2brtkjglrf34wf6kbxpa5hgtmg2xqopinhgxn5axo73a.domains.proton.ch.")
 	Customizations = DomainCustomizations{
-		"sslip.io.": {
+/*		"sslip.io.": {
 			A: []dnsmessage.AResource{
 				{A: [4]byte{78, 46, 204, 247}},
 			},
@@ -169,7 +169,7 @@ var (
 			CNAME: dnsmessage.CNAMEResource{
 				CNAME: dkim3,
 			},
-		},
+		},*/
 	}
 )
 
