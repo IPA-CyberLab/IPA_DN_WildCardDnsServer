@@ -37,6 +37,11 @@ func init_config() xip.Config {
     // その Web サーバーのアドレスを記載するのである。
     cfg.DomainExactMatchARecord = "9.8.2.1"
 
+    // 応答する動的レコードの TTL を設定する
+    cfg.TtlSecsForDynamicRecords = 60 * 60 * 24 * 7 // 動的生成レコード。これは原理的に変化することはないはずなので、1 週間に設定する。
+    cfg.TtlSecsForStaticRecords = 5 * 60 // 静的レコード。これは本 DNS サーバーが停止してしまったときの障害に早期に気付くためのチェック用に利用できるので、5 分という大変気の短い時間に設定する。
+    cfg.TtlSecsForNsRecords = 60 * 60 * 12 // NS レコード。これは本 DNS サーバーの IP アドレスを変化したい場合に長すぎると困るので、12 時間に設定する。
+
     cfg.NsServerList = nsServerList
     return cfg
 }

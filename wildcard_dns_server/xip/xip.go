@@ -39,6 +39,10 @@ type Config struct {
 	DomainExactMatchARecord string
 
 	WildcardCertServerIp string
+
+	TtlSecsForDynamicRecords uint32
+	TtlSecsForStaticRecords uint32
+	TtlSecsForNsRecords uint32
 }
 
 var g_wildcard_server_ns_record []dnsmessage.NSResource
@@ -284,7 +288,8 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 	case dnsmessage.TypeA:
 		{
 			var nameToAs []dnsmessage.AResource
-			nameToAs = NameToA(q.Name.String())
+			var customized bool
+			nameToAs, customized = NameToA(q.Name.String())
 			if len(nameToAs) == 0 {
 				// No Answers, only 1 Authorities
 				soaHeader, soaResource := SOAAuthority(q.Name)
@@ -301,11 +306,13 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 				// 1 or more A records; A records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
 					for _, nameToA := range nameToAs {
+						var ttl = cfg.TtlSecsForDynamicRecords
+						if (customized) { ttl = cfg.TtlSecsForStaticRecords }
 						err = b.AResource(dnsmessage.ResourceHeader{
 							Name:   q.Name,
 							Type:   dnsmessage.TypeA,
 							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							TTL:    ttl,
 							Length: 0,
 						}, nameToA)
 						if err != nil {
@@ -324,7 +331,8 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 	case dnsmessage.TypeAAAA:
 		{
 			var nameToAAAAs []dnsmessage.AAAAResource
-			nameToAAAAs = NameToAAAA(q.Name.String())
+			var customized bool
+			nameToAAAAs, customized = NameToAAAA(q.Name.String())
 			if len(nameToAAAAs) == 0 {
 				// No Answers, only 1 Authorities
 				soaHeader, soaResource := SOAAuthority(q.Name)
@@ -341,11 +349,13 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 				// 1 or more AAAA records; AAAA records > 1 only available via Customizations
 				func(b *dnsmessage.Builder) error {
 					for _, nameToAAAA := range nameToAAAAs {
+						var ttl = cfg.TtlSecsForDynamicRecords
+						if (customized) { ttl = cfg.TtlSecsForStaticRecords }
 						err = b.AAAAResource(dnsmessage.ResourceHeader{
 							Name:   q.Name,
 							Type:   dnsmessage.TypeAAAA,
 							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							TTL:    ttl,
 							Length: 0,
 						}, nameToAAAA)
 						if err != nil {
@@ -393,7 +403,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 						Name:   q.Name,
 						Type:   dnsmessage.TypeCNAME,
 						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						TTL:    cfg.TtlSecsForStaticRecords,
 						Length: 0,
 					}, *cname)
 					if err != nil {
@@ -420,7 +430,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 							Name:   q.Name,
 							Type:   dnsmessage.TypeMX,
 							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							TTL:    cfg.TtlSecsForStaticRecords,
 							Length: 0,
 						}, mailExchanger)
 					}
@@ -447,7 +457,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 						Name:   q.Name,
 						Type:   dnsmessage.TypeSOA,
 						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						TTL:    cfg.TtlSecsForStaticRecords,
 						Length: 0,
 					}, soaResource)
 					if err != nil {
@@ -475,7 +485,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 								Name:   q.Name,
 								Type:   dnsmessage.TypeNS,
 								Class:  dnsmessage.ClassINET,
-								TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+								TTL:    cfg.TtlSecsForStaticRecords,
 								Length: 0,
 							}, nameServer)
 							if err != nil {
@@ -511,7 +521,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 							Name:   q.Name,
 							Type:   dnsmessage.TypeTXT,
 							Class:  dnsmessage.ClassINET,
-							TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+							TTL:    cfg.TtlSecsForStaticRecords,
 							Length: 0,
 						}, txt)
 						if err != nil {
@@ -565,7 +575,7 @@ func NSResponse(name dnsmessage.Name, response *Response, logMessage string) (st
 						Name:   name,
 						Type:   dnsmessage.TypeNS,
 						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						TTL:    cfg.TtlSecsForNsRecords,
 						Length: 0,
 					}, nameServer)
 					if err != nil {
@@ -583,7 +593,7 @@ func NSResponse(name dnsmessage.Name, response *Response, logMessage string) (st
 						Name:   name,
 						Type:   dnsmessage.TypeNS,
 						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						TTL:    cfg.TtlSecsForNsRecords,
 						Length: 0,
 					}, nameServer)
 					if err != nil {
@@ -597,24 +607,26 @@ func NSResponse(name dnsmessage.Name, response *Response, logMessage string) (st
 	response.Additionals = append(response.Additionals,
 		func(b *dnsmessage.Builder) error {
 			for _, nameServer := range nameServers {
-				for _, aResource := range NameToA(nameServer.NS.String()) {
+				var tmp, _ = NameToA(nameServer.NS.String())
+				for _, aResource := range tmp {
 					err := b.AResource(dnsmessage.ResourceHeader{
 						Name:   nameServer.NS,
 						Type:   dnsmessage.TypeA,
 						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						TTL:    cfg.TtlSecsForNsRecords,
 						Length: 0,
 					}, aResource)
 					if err != nil {
 						return err
 					}
 				}
-				for _, aaaaResource := range NameToAAAA(nameServer.NS.String()) {
+				var tmp2, _ = NameToAAAA(nameServer.NS.String())
+				for _, aaaaResource := range tmp2 {
 					err := b.AAAAResource(dnsmessage.ResourceHeader{
 						Name:   nameServer.NS,
 						Type:   dnsmessage.TypeAAAA,
 						Class:  dnsmessage.ClassINET,
-						TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; long TTL, these IP addrs don't change
+						TTL:    cfg.TtlSecsForNsRecords,
 						Length: 0,
 					}, aaaaResource)
 					if err != nil {
@@ -652,11 +664,11 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 }
 
 // NameToA returns an []AResource that matched the hostname
-func NameToA(fqdnString string) []dnsmessage.AResource {
+func NameToA(fqdnString string) ([]dnsmessage.AResource, bool) {
 	fqdn := []byte(fqdnString)
 	// is it a customized A record? If so, return early
 	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.A) > 0 {
-		return domain.A
+		return domain.A, true
 	}
 	for _, ipv4RE := range []*regexp.Regexp{ipv4REDashes, ipv4REDots} {
 		if ipv4RE.Match(fqdn) {
@@ -665,21 +677,21 @@ func NameToA(fqdnString string) []dnsmessage.AResource {
 			ipv4address := net.ParseIP(match).To4()
 			return []dnsmessage.AResource{
 				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
-			}
+			}, false
 		}
 	}
-	return []dnsmessage.AResource{}
+	return []dnsmessage.AResource{}, false
 }
 
 // NameToAAAA returns an []AAAAResource that matched the hostname
-func NameToAAAA(fqdnString string) []dnsmessage.AAAAResource {
+func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, bool) {
 	fqdn := []byte(fqdnString)
 	// is it a customized AAAA record? If so, return early
 	if domain, ok := Customizations[strings.ToLower(fqdnString)]; ok && len(domain.AAAA) > 0 {
-		return domain.AAAA
+		return domain.AAAA, true
 	}
 	if !ipv6RE.Match(fqdn) {
-		return []dnsmessage.AAAAResource{}
+		return []dnsmessage.AAAAResource{}, false
 	}
 
 	ipv6RE.Longest()
@@ -688,14 +700,14 @@ func NameToAAAA(fqdnString string) []dnsmessage.AAAAResource {
 	ipv16address := net.ParseIP(match).To16()
 	if ipv16address == nil {
 		// We shouldn't reach here because `match` should always be valid, but we're not optimists
-		return []dnsmessage.AAAAResource{}
+		return []dnsmessage.AAAAResource{}, false
 	}
 
 	AAAAR := dnsmessage.AAAAResource{}
 	for i := range ipv16address {
 		AAAAR.AAAA[i] = ipv16address[i]
 	}
-	return []dnsmessage.AAAAResource{AAAAR}
+	return []dnsmessage.AAAAResource{AAAAR}, false
 }
 
 // CNAMEResource returns the CNAME via Customizations, otherwise nil
@@ -754,7 +766,7 @@ func SOAAuthority(name dnsmessage.Name) (dnsmessage.ResourceHeader, dnsmessage.S
 		Name:   name,
 		Type:   dnsmessage.TypeSOA,
 		Class:  dnsmessage.ClassINET,
-		TTL:    604800, // 60 * 60 * 24 * 7 == 1 week; it's not gonna change
+		TTL:    cfg.TtlSecsForStaticRecords,
 		Length: 0,
 	}, SOAResource(name)
 }
