@@ -1,3 +1,13 @@
+// IPA_DN_WildCardDnsServer
+// https://github.com/IPA-CyberLab/IPA_DN_WildCardDnsServer/
+// 
+// Copyright (c) 2021- IPA CyberLab.
+// All Rights Reserved.
+// 
+// Author: Daiyuu Nobori
+// 
+// インチキ Wildcard DNS サーバー！！
+// 
 // Forked From: https://github.com/cunnie/sslip.io/
 // (Golang-based DNS server which maps DNS records with embedded IP addresses to those addresses)
 // by Brian Cunnie (https://github.com/cunnie/)
