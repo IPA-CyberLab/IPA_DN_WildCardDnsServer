@@ -45,6 +45,8 @@ type Config struct {
 	TtlSecsForNsRecords uint32
 }
 
+var baseDomainName dnsmessage.Name
+
 var g_wildcard_server_ns_record []dnsmessage.NSResource
 
 var cfg Config
@@ -84,6 +86,8 @@ func SetConfig(newConfig Config) {
 	var nsr dnsmessage.NSResource
 	nsr.NS, _ = dnsmessage.NewName("ssl-cert-server." + cfg.DomainFqdn)
 	g_wildcard_server_ns_record = append(g_wildcard_server_ns_record, nsr)
+
+	baseDomainName, _ = dnsmessage.NewName(cfg.DomainFqdn)
 }
 
 // DomainCustomizations are values that are returned for specific queries.
@@ -292,7 +296,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 			nameToAs, customized = NameToA(q.Name.String())
 			if len(nameToAs) == 0 {
 				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
+				soaHeader, soaResource := SOAAuthority(baseDomainName)
 				response.Authorities = append(response.Authorities,
 					func(b *dnsmessage.Builder) error {
 						if err = b.SOAResource(soaHeader, soaResource); err != nil {
@@ -336,7 +340,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 			nameToAAAAs, customized = NameToAAAA(q.Name.String())
 			if len(nameToAAAAs) == 0 {
 				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
+				soaHeader, soaResource := SOAAuthority(baseDomainName)
 				response.Authorities = append(response.Authorities,
 					func(b *dnsmessage.Builder) error {
 						if err = b.SOAResource(soaHeader, soaResource); err != nil {
@@ -388,7 +392,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 			cname = CNAMEResource(q.Name.String())
 			if cname == nil {
 				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
+				soaHeader, soaResource := SOAAuthority(baseDomainName)
 				response.Authorities = append(response.Authorities,
 					func(b *dnsmessage.Builder) error {
 						if err = b.SOAResource(soaHeader, soaResource); err != nil {
@@ -504,7 +508,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 			txts = TXTResources(q.Name.String())
 			if len(txts) == 0 {
 				// No Answers, only 1 Authorities
-				soaHeader, soaResource := SOAAuthority(q.Name)
+				soaHeader, soaResource := SOAAuthority(baseDomainName)
 				response.Authorities = append(response.Authorities,
 					func(b *dnsmessage.Builder) error {
 						if err = b.SOAResource(soaHeader, soaResource); err != nil {
@@ -549,7 +553,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 			// default is the same case as an A/AAAA record which is not found,
 			// i.e. we return no answers, but we return an authority section
 			// No Answers, only 1 Authorities
-			soaHeader, soaResource := SOAAuthority(q.Name)
+			soaHeader, soaResource := SOAAuthority(baseDomainName)
 			response.Authorities = append(response.Authorities,
 				func(b *dnsmessage.Builder) error {
 					if err = b.SOAResource(soaHeader, soaResource); err != nil {
