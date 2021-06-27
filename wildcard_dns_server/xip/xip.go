@@ -300,6 +300,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 						}
 						return nil
 					})
+				response.Header.RCode = dnsmessage.RCodeNameError // 2021/06/27 dnobori
 				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
 			response.Answers = append(response.Answers,
@@ -343,6 +344,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 						}
 						return nil
 					})
+				response.Header.RCode = dnsmessage.RCodeNameError // 2021/06/27 dnobori
 				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
 			response.Answers = append(response.Answers,
@@ -394,6 +396,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 						}
 						return nil
 					})
+				response.Header.RCode = dnsmessage.RCodeNameError // 2021/06/27 dnobori
 				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
 			response.Answers = append(response.Answers,
@@ -509,6 +512,7 @@ func processQuestion(q dnsmessage.Question, response *Response) (logMessage stri
 						}
 						return nil
 					})
+				response.Header.RCode = dnsmessage.RCodeNameError // 2021/06/27 dnobori
 				return logMessage + "nil, SOA " + soaLogMessage(soaResource), nil
 			}
 			response.Answers = append(response.Answers,
