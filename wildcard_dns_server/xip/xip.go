@@ -43,11 +43,17 @@ type Config struct {
 	TtlSecsForDynamicRecords uint32
 	TtlSecsForStaticRecords uint32
 	TtlSecsForNsRecords uint32
+
+	AllowedIPv4Subnets string
+	AllowedIPv6Subnets string
 }
 
 var baseDomainName dnsmessage.Name
 
 var g_wildcard_server_ns_record []dnsmessage.NSResource
+
+var g_allowed_ipv4_subnets []net.IPNet
+var g_allowed_ipv6_subnets []net.IPNet
 
 var cfg Config
 
@@ -88,6 +94,45 @@ func SetConfig(newConfig Config) {
 	g_wildcard_server_ns_record = append(g_wildcard_server_ns_record, nsr)
 
 	baseDomainName, _ = dnsmessage.NewName(cfg.DomainFqdn)
+
+	g_allowed_ipv4_subnets = SubnetsStringToIPNetList(cfg.AllowedIPv4Subnets, false)
+	g_allowed_ipv6_subnets = SubnetsStringToIPNetList(cfg.AllowedIPv6Subnets, true)
+}
+
+func IsIPInSubnetsList(ip net.IP, subnetList []net.IPNet) bool {
+	if (len(subnetList) == 0) {
+		return true
+	}
+
+	for _, subnet := range subnetList {
+		if (subnet.Contains(ip)) {
+			return true
+		}
+	}
+
+	return false;
+}
+
+func SubnetsStringToIPNetList(src string, ipv6 bool) ([]net.IPNet) {
+	var ret []net.IPNet
+	var size int
+	if (ipv6) {
+		size = 16
+	} else {
+		size = 4
+	}
+
+	tokens := strings.Split(src, " ")
+	for _, token := range tokens{
+		_, subnet, _ := net.ParseCIDR(token)
+
+		if (subnet != nil){
+			if (len(subnet.IP) == size) {
+				ret = append(ret, *subnet)
+			}
+		}
+	}
+	return ret
 }
 
 // DomainCustomizations are values that are returned for specific queries.
@@ -667,6 +712,10 @@ func ResponseHeader(query dnsmessage.Header, rcode dnsmessage.RCode) dnsmessage.
 	}
 }
 
+func CheckIsIpInConfigSubnets(ip net.IP) (bool) {
+	return false
+}
+
 // NameToA returns an []AResource that matched the hostname
 func NameToA(fqdnString string) ([]dnsmessage.AResource, bool) {
 	fqdn := []byte(fqdnString)
@@ -679,9 +728,11 @@ func NameToA(fqdnString string) ([]dnsmessage.AResource, bool) {
 			match := string(ipv4RE.FindSubmatch(fqdn)[2])
 			match = strings.Replace(match, "-", ".", -1)
 			ipv4address := net.ParseIP(match).To4()
-			return []dnsmessage.AResource{
-				{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
-			}, false
+			if (IsIPInSubnetsList(ipv4address, g_allowed_ipv4_subnets)) {
+				return []dnsmessage.AResource{
+					{A: [4]byte{ipv4address[0], ipv4address[1], ipv4address[2], ipv4address[3]}},
+				}, false
+			}
 		}
 	}
 	return []dnsmessage.AResource{}, false
@@ -704,6 +755,9 @@ func NameToAAAA(fqdnString string) ([]dnsmessage.AAAAResource, bool) {
 	ipv16address := net.ParseIP(match).To16()
 	if ipv16address == nil {
 		// We shouldn't reach here because `match` should always be valid, but we're not optimists
+		return []dnsmessage.AAAAResource{}, false
+	}
+	if (IsIPInSubnetsList(ipv16address, g_allowed_ipv6_subnets) == false) {
 		return []dnsmessage.AAAAResource{}, false
 	}
 
