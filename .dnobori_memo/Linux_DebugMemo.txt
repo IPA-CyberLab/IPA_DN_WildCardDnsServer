@@ -1,0 +1,30 @@
+﻿dnt-ub1
+
+
+# 初回
+
+apt-get -y update && apt-get -y install golang-go
+
+cd ~/
+
+git clone --recursive git@github.com:IPA-CyberLab/IPA_DN_WildCardDnsServer.git
+
+
+# 2 回目以降 最新コードをテスト実行
+
+cd ~/IPA_DN_WildCardDnsServer/wildcard_dns_server/ && (git pull origin main && git submodule update --init --recursive) && go run main.go config.go
+
+# UNC パスのインチキ・デバッグさん
+
+code \\dnt-ub1\root\root\IPA_DN_WildCardDnsServer\wildcard_dns_server\
+
+
+# インチキ開発さん
+
+cd ~/IPA_DN_WildCardDnsServer/wildcard_dns_server/ && go run main.go config.go
+
+
+
+nslookup
+server 103.95.185.84
+
